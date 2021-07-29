@@ -8,12 +8,13 @@
  * IMU Variables
  ***************************************************/
 //Offsets for the IMU values
-const float X_ACCEL_OFFSET = 312.58;
-const float Y_ACCEL_OFFSET = -178.67;
-const float Z_ACCEL_OFFSET = -157.19;
-const float X_GYRO_OFFSET = -933.13;
-const float Y_GYRO_OFFSET = -296.18;
-const float Z_GYRO_OFFSET = -225.30;
+const float X_ACCEL_OFFSET = 1900.20;
+const float Y_ACCEL_OFFSET = -96.02;
+const float Z_ACCEL_OFFSET = -198.80;
+const float X_GYRO_OFFSET = -919.89;
+const float Y_GYRO_OFFSET = -287.13;
+const float Z_GYRO_OFFSET = -222.08;
+
 
 //Constants which depend on the selected sensitivity of the IMU
 const float ACCEL_SENSITIVITY_CONVERSION = 16384.0;
@@ -21,7 +22,6 @@ const float GYRO_SENSITIVITY_CONVERSION = 131.0;
 
 //The Complementary filter needs a weight for the gyro data and the accel data to melt them
 const float COMPL_FILTER_GYRO_WEIGHT = 0.95;
-
 struct AxisValues {
   float X;
   float Y;
@@ -49,37 +49,19 @@ long oldTime;
 float roll_Angle;
 float pitch_Angle;
 
-/***************************************************
- * Joystick Variables
- ***************************************************/
-//Joystick Variables
-const int ctrlSW = 2;
-const int ctrlX = A1;
-const int ctrlY = A0;
-const int ADC_RESOLUTION = 9;
-//Joystick Variables to store the data
-bool ctrlSWData = false;
-int ctrlXData = 0;
-int ctrlYData = 0;
-
 //Transmitter object
 RF24 radio(7, 8); // CE, CSN
 //Adress for communication
 const byte address[6] = "00001";
 
 //Array of all the data which should be send
-int data[5];
+int data[2];
 
 void setup() {
   Serial.begin(9600);
   radio.begin();
   radio.openWritingPipe(address);
-  //radio.setPALevel(RF24_PA_MIN);
   radio.stopListening();
-  pinMode(ctrlX,INPUT);
-  pinMode(ctrlY,INPUT);
-  pinMode(ctrlSW,INPUT);
-  digitalWrite(ctrlSW,HIGH);
   //IMU-communication
   Wire.begin();
   setupMPU();
@@ -120,8 +102,6 @@ void setupMPU() {
  * data[4] -> Estimated Pitch angle: Should be between -90 and 90 degrees and no more. Better not come close to -90 or +90
  */
 void loop() {
-  //Joystick
-  readJoystickData();
   //IMU stuff
   recordAccelRegisters();
   recordGyroRegisters();
@@ -130,23 +110,14 @@ void loop() {
   estimateAnglesAccel();
   complementaryFilter();
   
-  data[0] = ctrlXData;
-  data[1] = ctrlYData;
-  data[2] = ctrlSWData;
-  data[3] = roll_Angle;
-  data[4] = pitch_Angle;
+  data[0] = roll_Angle;
+  data[1] = pitch_Angle;
   radio.write(&data, sizeof(data));
-  Serial.println(" sent data");
+  Serial.println("sent data");
+  //delay(500);
+  //printData();
 }
 
-/***************************************************
- * Joystick Code
- ***************************************************/
-void readJoystickData() {
-  ctrlSWData = digitalRead(ctrlSW);
-  ctrlXData = analogRead(ctrlX);
-  ctrlYData = analogRead(ctrlY);
-}
 
 /***************************************************
  * IMU Code
@@ -236,13 +207,7 @@ void complementaryFilter() {
  * Debugging if needed
  ***************************************************/
 void printData() {
-  Serial.print("Switch: ");
-  Serial.print(ctrlSWData);
-  Serial.print("-> X-axis: ");
-  Serial.print(ctrlXData);
-  Serial.print("-> Y-axis: ");
-  Serial.print(ctrlYData);
-  Serial.print("-> Accel X: ");
+  Serial.print("Accel X: ");
   Serial.print(accel.X);
   Serial.print("-> Accel Y: ");
   Serial.print(accel.Y);
